@@ -1,0 +1,16 @@
+#include "syscall.h"
+
+int lock;
+
+int main()
+{
+  lock = CreateLock();
+
+  Acquire(lock);
+
+  Destroy(20);
+
+  Release(lock);
+
+  Destroy(lock);
+}

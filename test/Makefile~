@@ -1,0 +1,138 @@
+# use normal make for this Makefile
+#
+# Makefile for building user programs to run on top of Nachos
+#
+# Several things to be aware of:
+#
+#    Nachos assumes that the location of the program startup routine (the
+# 	location the kernel jumps to when the program initially starts up)
+#       is at location 0.  This means: start.o must be the first .o passed 
+# 	to ld, in order for the routine "Start" to be loaded at location 0
+#
+
+# If you are running on SunOS 5.x machines, uncomment the next line
+GCCDIR = /auto/home-scf-22/csci402/testgnu/decstation-ultrix/bin/
+LDFLAGS = -T newscript -N
+ASFLAGS = -mips1
+CPPFLAGS = $(INCDIR)
+
+# if you aren't cross-compiling:
+# GCCDIR =
+# LDFLAGS = -N -T 0
+# ASFLAGS =
+# CPPFLAGS = -P $(INCDIR)
+
+
+CC = $(GCCDIR)gcc
+AS = $(GCCDIR)as
+LD = $(GCCDIR)ld
+CPP = $(GCCDIR)cpp
+
+INCDIR =-I../userprog -I../threads
+CFLAGS = -G 0 -c $(INCDIR)
+
+all: halt matmult sort testfiles Yield testproj2 useritoa senate_user exectest add sub multiply div forktest execfork newtest
+
+start.o: start.s ../userprog/syscall.h
+	$(CPP) $(CPPFLAGS) start.s > strt.s
+	$(AS) $(ASFLAGS) -o start.o strt.s
+	rm strt.s
+
+halt.o: halt.c
+	$(CC) $(CFLAGS) -c halt.c
+halt: halt.o start.o
+	$(LD) $(LDFLAGS) start.o halt.o -o halt.coff
+	../bin/coff2noff halt.coff halt
+
+Yield.o: Yield.c
+	$(CC) $(CFLAGS) -c Yield.c
+Yield: Yield.o start.o
+	$(LD) $(LDFLAGS) start.o Yield.o -o Yield.coff
+	../bin/coff2noff Yield.coff Yield
+	
+testproj2.o: testproj2.c
+	$(CC) $(CFLAGS) -c testproj2.c
+testproj2: testproj2.o start.o
+	$(LD) $(LDFLAGS) start.o testproj2.o -o testproj2.coff
+	../bin/coff2noff testproj2.coff testproj2	
+	
+useritoa.o: useritoa.c
+	$(CC) $(CFLAGS) -c useritoa.c
+useritoa: useritoa.o start.o
+	$(LD) $(LDFLAGS) start.o useritoa.o -o useritoa.coff
+	../bin/coff2noff useritoa.coff useritoa	
+	
+senate_user.o: senate_user.c
+	$(CC) $(CFLAGS) -c senate_user.c
+senate_user: senate_user.o start.o
+	$(LD) $(LDFLAGS) start.o senate_user.o -o senate_user.coff
+	../bin/coff2noff senate_user.coff senate_user	
+	
+exectest.o: exectest.c
+	$(CC) $(CFLAGS) -c exectest.c
+exectest: exectest.o start.o
+	$(LD) $(LDFLAGS) start.o exectest.o -o exectest.coff
+	../bin/coff2noff exectest.coff exectest	
+	
+add.o: add.c
+	$(CC) $(CFLAGS) -c add.c
+add: add.o start.o
+	$(LD) $(LDFLAGS) start.o add.o -o add.coff
+	../bin/coff2noff add.coff add
+
+sub.o: sub.c
+	$(CC) $(CFLAGS) -c sub.c
+sub: sub.o start.o
+	$(LD) $(LDFLAGS) start.o sub.o -o sub.coff
+	../bin/coff2noff sub.coff sub	
+	
+multiply.o: multiply.c
+	$(CC) $(CFLAGS) -c multiply.c
+multiply: multiply.o start.o
+	$(LD) $(LDFLAGS) start.o multiply.o -o multiply.coff
+	../bin/coff2noff multiply.coff multiply
+	
+div.o: div.c
+	$(CC) $(CFLAGS) -c div.c
+div: div.o start.o
+	$(LD) $(LDFLAGS) start.o div.o -o div.coff
+	../bin/coff2noff div.coff div	
+	
+forktest.o: forktest.c
+	$(CC) $(CFLAGS) -c forktest.c
+forktest: forktest.o start.o
+	$(LD) $(LDFLAGS) start.o forktest.o -o forktest.coff
+	../bin/coff2noff forktest.coff forktest	
+
+sort.o: sort.c
+	$(CC) $(CFLAGS) -c sort.c
+sort: sort.o start.o
+	$(LD) $(LDFLAGS) start.o sort.o -o sort.coff
+	../bin/coff2noff sort.coff sort
+
+matmult.o: matmult.c
+	$(CC) $(CFLAGS) -c matmult.c
+matmult: matmult.o start.o
+	$(LD) $(LDFLAGS) start.o matmult.o -o matmult.coff
+	../bin/coff2noff matmult.coff matmult
+
+testfiles.o: testfiles.c
+	$(CC) $(CFLAGS) -c testfiles.c
+testfiles: testfiles.o start.o
+	$(LD) $(LDFLAGS) start.o testfiles.o -o testfiles.coff
+	../bin/coff2noff testfiles.coff testfiles
+	
+newtest.o: newtest.c
+	$(CC) $(CFLAGS) -c newtest.c
+newtest: newtest.o start.o
+	$(LD) $(LDFLAGS) start.o newtest.o -o newtest.coff
+	../bin/coff2noff newtest.coff newtest
+	
+execfork.o: execfork.c
+	$(CC) $(CFLAGS) -c execfork.c
+execfork: execfork.o start.o
+	$(LD) $(LDFLAGS) start.o execfork.o -o execfork.coff
+	../bin/coff2noff execfork.coff execfork
+
+clean:
+	rm -f *.o *.coff

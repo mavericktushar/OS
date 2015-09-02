@@ -1,0 +1,240 @@
+Title:  Writeup for Project 3, Fall 2008
+ Date:  11/04/08 
+ Group Num 31: 	Name            		Email            		Student ID 
+			Utku Yilmaz		hyilmaz@usc.edu	1106697273
+			Judayle Desouza jldsouza@usc.edu 7802042437
+			Tushar Nautiyal        tnautiya@usc.edu 4629150529
+I. Requirements
+The first part of the project requires us to implement TLB(translation look aside buffer) this table consist of only four entries and the machine refers to this table to find a page in memory. The TLB is updated via the page table and then later on via the IPT. We need the TLB to function for two or more programs with out failing to complete part one.
+
+The second part of the project deals with the implementation of virtual memory. Where there is no preloading of pages into memory. In step one we didn¢t have to worry about an entry not being in memory but now it may happen that a page is not in the IPT which will cause a IPT miss and in such a case the IPT will have to be updated from the page table which has all the information of that process. also we have to consider the scenario where in the memory now gets full and a page in memory has to be thrown out in which case we can implement two policies either FIFO or random. We also have to check if the page that we are throwing out of memory is dirty (modified) or not and if it is then a copy of it has to be stored in the swap file and then page table has to be updated to point to the new location in the swap file.
+
+Part 3
+Part 3 of the project deals with converting all system calls such as CreateLock, CreateCondition, Acquire, Release, Wait etc to Remote Procedure calls so that the same lock or Condition Variable  can be used by different processes.
+
+The lock and condition Variable can now be shared among processes thus resulting in Interprocess Communication, which is achieved using Send and Receive methods of the postOffice object.
+
+All the clients interact with a common server, which allows for Interprocess communication.
+
+II. Assumptions
+
+No assumptions made.
+
+III. Design
+
+For the first part we have updated the TLB via the IPT . when the machine does not find the address that it is looking for in the TLB and initially the TLB is empty a page fault exception is thrown when this happens the IPT is looked up and since initially the memory is empty as there is no preloading into memory it causes a IPT miss and in that case it looks for the address in the page table of that process. once the page is found on disk the IPT is updated and the same line of code is executed as NextPCReg is not incremented and when this line of code is executed for the second time a page fault is caused and the IPT is looked up again this time the IPT contains the page which caused the page fault and the TLB is updated. In this way the TLB IPT and page table are synchronized. On a context switch the TLB becomes invalid and it is invalidated in the save state function at the same time the IPT & page table is also updated if any of the entries in the TLB have their dirty bit set.
+
+The second part of the project deals with the implementation of virtual memory. In this part we implement the swap file. We use the swap file to store the pages in the memory which have been modified and need to be removed from memory in order to make place for a new page. When a page is copied to the swap file the page table needs to be updated and needs to contain the address of the page in the swap file. Now every time the page that was in the swap file needs to be accessed it needs to be copied into memory from the swap file and not from the disk once it is copied to memory the page is cleared but the dirty bit is maintained as dirty so that if this page needs to be removed from memory then it will first we copied into the swap file and the process repeated. We have implemented both policies of page replacement that is FIFO and Random. Random policy just picks a number and takes its modulo by 32 so we get a random value between 0 to 32, Fifo policy is a simple queue we put the physical page number into queue when we add an entry to IPT and remove when we need an empty space.
+Part3 
+
+Whenever a  Lock or a Condition Variable has to be created, the request goes to the server and a Lock or condition Variable is created with corresponding entry made in the global Lock table or condition Table maintained at the Server. The corresponding lock¢s or condition Variable¢s ID is returned (the request ues lock name or condition Variable name to identify a lock or a condition Variable). If same lock or condition Variable is requested to be created again, the same ID is returned but no new lock or condition Variable is created. 
+
+All other RPCs are done by using the ID returned. The Id is used and then looked into the table.
+Then checking for the lock or condition to be valid needs to be done along with other validations.
+If all validations done then required operation is performed.
+
+Also While destroying lock or condition Variable it is checked if lock or condition Variable is created.
+
+IV. Implementation: 
++ Files Modified 
+userprog/Exception.cc, userprog/addrspace.cc/h, threads/system.cc/h, threads/thread.cc, userprog/progtest.cc,  
+network/nettest.cc, userprog/exception.cc
++ Files added 
+None
++ Data Structures added, and the file they were added to. 
+PT_TranslationEntry 		-- in file addrspace.h
+IPT_TranslationEntry		-- in file system.cc/h  
+struct LockTblStruct               -- in network/nettest.cc
+struct ConditionTblStruct       -- in network/nettest.cc
+class ReplyMsg                      -- in network/nettest.cc 
++ Data Structures modified, and the file they were added to. 
+	None
++ Functions added and in which file. 
+	UpdateIPTFromPT, UpdateTLBFromIPT, HandlePageFaultIPT  in file exception.cc 
+      Server_RPC()                                                                                - in file nettest.cc
++ Functions modified and in which file.
+	SaveUserState  in file threads.cc
+	{
+IntStatus oldLevel = interrupt->SetLevel(IntOff);						
+		for(int m=0;m<4;m++)
+		machine->tlb[m].valid = FALSE;
+		for(int m=0;m<4;m++)
+			{
+				if (machine->tlb[m].dirty == TRUE)
+					{
+processTable[IPT[machine->tlb[m].physicalPage]->processId].mainSpace->pageTable[IPT[machine->tlb[m].physicalPage]->virtualPage].dirty = TRUE;
+						IPT[machine->tlb[m].physicalPage]->dirty = TRUE;
+					}
+			}
+		(void) interrupt->SetLevel(oldLevel);
+Part3 
+
+V. Testing
++ How to test
+	cd nachos-csci402/code/network
+nachos x ../test/matmult Random
+nachos x ../test/matmult Fifo
+		Checks matmult function returns the correct value or not
+
+nachos x ../test/sort Random
+nachos x ../test/sort Fifo
+Checks sort fuctiontion returns the correct value or not
+
+nachos x ../test/multith Random
+nachos x ../test/multith Fifo
+
+Checks if exec function works correctly
+
+nachos x ../test/forktest Random
+nachos x ../test/forktest Fifo
+
+Checks if the fork function works correctly
+
+nachos x ../test/execfork Random
+nachos x ../test/execfork Fifo
+
+Checks if executing and forking threads correctly works 
+
+nachos x ../test/multith -Randomrs 10
+nachos x ../test/multith Fifo rs 10
+
+Checks if the program runs for also rs values
+
+nachos x ../test/execfork Random rs 10
+nachos x ../test/execfork Fifo rs 10
+
+Checks if the program runs for also rs values
+
+	+ Test output
+	
+7220
+1023
+0,0,0,0 (for addition, multiplication, division and subtraction)
+7220 (for matmult)
+1023 (for sort)
+
+
+	4) In exit system call for 5 time . . . (forks 4 times and printouts multiplication, addition, subtraction and division values of 20 and 10 )
+
+In exit system call for 7 time . . . (creates 2 new threads and each forks 2 functions, printouts -Y´multiplication of a=10, b=20, 200¡ and at the end number of exits as 7 times)
+Printouts the results of addition, subtraction, division, multiplication by 10 and 20 and results of matmult and sort as 7220, 1023 respectively
+Printouts ´multiplication of a=10, b=20, 200¡ and at the end number of exits as 7 times
+Part3 
+	
+	cd nachos-csci402/code/network
+
+	To run server
+	
+	nachos -server
+
+	//  Locks
+nachos m 1 x ../test/rpc_locktestcrde -  Requires 1 client to be run
+nachos m 1 x ../test/rpc_lockacretest  Requires 1 client to run
+
+nachos m 1 x ../test/rpc_locktest
+nachos m 2 x ../test/rpc_locktestrel  -  Requires 2 client to run
+
+//Conditions
+nachos m 1 x ../test/rpc_conditiontest -  Requires 1 client to be run
+
+ nachos m 1 x ../test/rpc_conditiontestsg -  Requires 1 client to be run
+
+nachos m 1 x ../test/rpc_conditionw  Requires  3  clients to be run
+
+nachos m 2 x ../test/rpc_conditionw
+
+nachos m 3 x ../test/rpc_conditions
+	
+nachos m 1 x ../test/rpc_conditionw  Requires 3 clients to be run
+
+nachos m 2 x ../test/rpc_conditionw
+
+nachos m 3 x ../test/rpc_conditionb
+
+ 
+
+
+
+
++ Test Ouput
+
+1)Creates four locks and then Destroys the four locks
+   Then try to Destroy a lock that has not been created 
+
+2)Creates two Locks 
+    Acquires one Releases it 
+    Then Acquire another and Releases it
+
+    Destroy Locks
+
+        	    Try to Acquire Invalid lock
+           	    Try to Release Invalid Lock
+	    Try to Destroy Invalid Lock
+
+3) Run locktest first it will Acquire  the lock and then again try to acquire the same lock,  so will be put into the lock queue.
+
+Now run locktestrel. This will release the lock allowing the waiting aquire to Acquire the lock.
+	
+Create a condition, Destroy it
+Create another condition, Destroy it
+Try to Destroy Invalid condition
+
+Create condition
+Again try to create  the same
+
+ 	Create condition
+Again try to create  the same
+
+Destroy both the Conditions
+
+Trying to Destroy conditions already destroyed
+
+Two clients go to wait
+Both of them signaled through third client
+
+Some invalid conditions also signalled
+
+Two clients go to wait
+Broadcast using third client
+
+
+
+
+VI. Discussion
+
++ Experiment expectation
+	We hope that after implementing correct TLB, IPT, PT and swap file any code running on nachos can run on with limited physical page number of 32. We can execute, fork system calls and run any user programs on our machine.
+
++ Experiment result.
+	Experiments show that we reached our goal. We can execute matmult and sort functions which need lots of page replacement into memory also we can fork and execute new threads. They also run smoothly in the memory without mixing their values.
+
++ Explanation
+	After many different test cases (some of these loads the memory causes many ipt misses, some are different threads running on the memory at the same time ) give the expected test result without causing any problem. This means we implemented the IPT, Swap and PT correctly so that any thread can run on the memory, update the TLB entries dirty and valid bit, read from and write to disk and swap file at correct locations and update the all entries correctly.
+
+Part3 
+
+VII. Miscellaneous:
+	Various test cases for part 3 try to portray following things.
+	(In addition to the expected lock and condition variable behaviour)
+Lock and condition Variables created - by name.
+If an already created lock or condition variable is created then nothing new is created but the Id for already existing lock or condition variable returned.
+Acquire, Release, Wait, Signal, Broadcast etc. cnnot be done without previously creating lock or condition variable.
+Multiple clients waiting on same condition
+       a)Signalled together b) Broadcasted
+
+
+Important Note:
+
+Part 3 i.e. networking part works fine from network directory
+Other parts Part 1 and 2 also work, giving the desired output but do not exit.
+After performing there task they just hang. So everything works but just does not exit(it sleeps).
+
+Running Part 3 from network directory
+Part 1 and 2 from vm directory, everything works.
+
+All test cases run. 
+
+
+
+
+

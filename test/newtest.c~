@@ -1,0 +1,52 @@
+#include "syscall.h"
+
+int writeLock;
+int j;
+char buf2[1][6];
+
+int count=0;
+
+
+void tests(int arg)
+{
+	
+	
+	Acquire(writeLock);
+	
+	
+	
+	Write("\n",1,1);	
+	
+	itoa(buf2[0],6,count);
+	/*
+	buf1[6]='\n';
+	*/
+	Write(buf2[0],6,1);
+	count++;
+	Write("th fork is created\n",19,1);
+	Write("Multiplication of a=10, b=20, 200\n",34,1);
+  
+	Release(writeLock);
+	
+	Exit(0);
+	
+}
+
+int main()
+{
+	Write("Exec starts creating forks\n",27,1);
+	writeLock=CreateLock();
+	
+	for(j=0;j<3;j++)
+	{
+		Fork(tests,0);
+	}
+	
+	
+	
+  
+  
+  Exit(0);
+  return 0;
+
+}
